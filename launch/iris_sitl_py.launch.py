@@ -28,8 +28,8 @@ def generate_launch_description():
    return LaunchDescription([
       Node(
          package='px4_offboard_lowlevel',
-         executable='offboard_controller_node_py',
-         name='offboard_controller_py',
+         executable='controller_node',
+         name='controller_node',
          parameters=[config_1, config_2, config_3]
       )
    ])

@@ -92,9 +92,6 @@ void controller::calculateControllerOutput(
 	Eigen::Quaterniond q_temp(R_d_w);
 	*desired_quaternion = q_temp;
 
-	// Attitude tracking.
-	Eigen::Vector3d tau;
-
 	// 	6. the attitude tracking error eR
 	const Eigen::Matrix3d e_R_matrix =
 		0.5 * (R_d_w.transpose() * R_B_W_ - R_B_W_.transpose() * R_d_w);

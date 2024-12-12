@@ -148,6 +148,6 @@ class Controller():
         # Output the wrench
         controller_torque_thrust = np.hstack((tau, thrust))
         
-        return controller_torque_thrust, desired_quaternion, self.position_W_, self.velocity_W_
+        return controller_torque_thrust, desired_quaternion
         
         

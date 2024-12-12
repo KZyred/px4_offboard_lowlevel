@@ -417,31 +417,25 @@ class ControllerNode(Node):
         #  Debug message
         self.get_logger().info("Controller got first odometry message.", once=True)
         
-        odom_msg.position[0] = 0.001
-        odom_msg.position[1] = 0.002
-        odom_msg.position[2] = 2.9
+        # odom_msg.position[0] = 0.001
+        # odom_msg.position[1] = 0.002
+        # odom_msg.position[2] = 2.9
         
-        odom_msg.velocity[0] = 0.001
-        odom_msg.velocity[1] = -0.002
-        odom_msg.velocity[2] = 0.003
+        # odom_msg.velocity[0] = 0.001
+        # odom_msg.velocity[1] = -0.002
+        # odom_msg.velocity[2] = 0.003
         
-        odom_msg.q[0] = 0.7
-        odom_msg.q[1] = 0.01
-        odom_msg.q[2] = 0.0001
-        odom_msg.q[3] = 0.9
+        # odom_msg.q[0] = 0.7
+        # odom_msg.q[1] = 0.01
+        # odom_msg.q[2] = 0.0001
+        # odom_msg.q[3] = 0.9
         
-        odom_msg.angular_velocity[0] = 0.001
-        odom_msg.angular_velocity[1] = 0.002
-        odom_msg.angular_velocity[2] = -0.003
+        # odom_msg.angular_velocity[0] = 0.001
+        # odom_msg.angular_velocity[1] = 0.002
+        # odom_msg.angular_velocity[2] = -0.003
         
         
         position, orientation, velocity, angular_velocity = Convert.eigen_odometry_from_PX4Msg(odom_msg)
-        
-        self.get_logger().info("position = %s \n" % (position))
-        self.get_logger().info("orientation = %s \n" % (orientation))
-        self.get_logger().info("velocity = %s \n" % (velocity))
-        self.get_logger().info("angular_velocity = %s \n" % (angular_velocity))
-        
         self.controller.set_odometry(position, orientation, velocity, angular_velocity)
 
     # check trạng thái
@@ -515,6 +509,11 @@ class ControllerNode(Node):
         attitude_setpoint_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         
         rotated_quat = Convert.rotate_quaternion_fromTo_ENU_NED(desired_quaternion)
+        
+        self.get_logger().info("rotated_quat = %s \n" % (rotated_quat))
+        # self.get_logger().info("throttles = %s \n" % (throttles))
+        
+        # [w x y z] PX4 ~ [x y z w] np.array
         attitude_setpoint_msg.q_d[0] = rotated_quat[3]
         attitude_setpoint_msg.q_d[1] = rotated_quat[0]
         attitude_setpoint_msg.q_d[2] = rotated_quat[1]
@@ -535,11 +534,10 @@ class ControllerNode(Node):
             return
         
         #  calculate controller output
-        controller_output, desired_quaternion, e_p, e_v = self.controller.calculate_controller_output()
-        # self.get_logger().info("position_W_ = %s \n" % (e_p))
+        controller_output, desired_quaternion = self.controller.calculate_controller_output()
+        # self.get_logger().info("controller_output = %s \n" % (controller_output))
+        # self.get_logger().info("desired_quaternion = %s \n" % (desired_quaternion))
         # self.get_logger().info("velocity_W_ = %s \n" % (e_v))
-
-        
 
         # Normalize the controller output
         normalized_torque_thrust = np.zeros(4)
@@ -548,7 +546,7 @@ class ControllerNode(Node):
             normalized_torque_thrust, throttles = self.px4_inverse_sitl(normalized_torque_thrust, throttles, controller_output)
         else:
             normalized_torque_thrust, throttles = self.px4_inverse(normalized_torque_thrust, throttles, controller_output)
-
+        
         # Publish the controller output
         if self.current_status_.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
             match self.control_mode_:

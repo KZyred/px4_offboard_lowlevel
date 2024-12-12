@@ -52,20 +52,23 @@ class Controller():
         self.r_velocity_W_ = np.zeros(3)
         self.r_acceleration_W_ = np.zeros(3)
         # Convert quaternion to rotation matrix
+        orientation_W = np.roll(orientation_W, -1)    
         rot = R.from_quat(orientation_W)  # [x, y, z, w]
         self.r_R_B_W_ = rot.as_matrix()
         self.r_yaw = rot.as_euler('xyz', degrees=False)[2]
         self.r_yaw_rate = 0.0
         
-    def set_trajectoryPoint(self, position_W, velocity_W, acceleration_W, orientation_W, angular_velocity_B):
-        self.r_position_W_ = position_W
-        self.r_velocity_W_ = velocity_W
-        self.r_acceleration_W_ = acceleration_W
-        # Convert quaternion to rotation matrix
-        rot = R.from_quat(orientation_W)  # [x, y, z, w]
-        self.r_R_B_W_ = rot.as_matrix()
-        self.r_yaw = rot.as_euler('xyz', degrees=False)[2]
-        self.r_yaw_rate = angular_velocity_B[2]
+        return self.r_R_B_W_, self.r_yaw
+        
+    # def set_trajectoryPoint(self, position_W, velocity_W, acceleration_W, orientation_W, angular_velocity_B):
+    #     self.r_position_W_ = position_W
+    #     self.r_velocity_W_ = velocity_W
+    #     self.r_acceleration_W_ = acceleration_W
+    #     # Convert quaternion to rotation matrix
+    #     rot = R.from_quat(orientation_W)  # [x, y, z, w]
+    #     self.r_R_B_W_ = rot.as_matrix()
+    #     self.r_yaw = rot.as_euler('xyz', degrees=False)[2]
+    #     self.r_yaw_rate = angular_velocity_B[2]
         
     # nhận từ phía drone
     def set_odometry(self, position_W, orientation_B_W, velocity_B, angular_velocity_B):
@@ -137,14 +140,10 @@ class Controller():
         e_omega = self.angular_velocity_B_ - self.R_B_W_.T @ R_d_w @ omega_ref
 
         # 8. Moment T (Attitude tracking)
-        tau = (
-            # -self.attitude_gain_ @ e_R  # Element-wise product
-            # - self.angular_rate_gain_ @ e_omega  # Element-wise product
-            # + np.cross(self.angular_velocity_B_, np.diag(self._inertia_matrix) * self.angular_velocity_B_)  # Cross product
-            - np.multiply(self.attitude_gain_, e_R)  # Element-wise product
-            - np.multiply(self.angular_rate_gain_, e_omega)  # Element-wise product
-            + np.cross(self.angular_velocity_B_, self._inertia_matrix * self.angular_velocity_B_)
-        )
+        tau = ( - np.multiply(self.attitude_gain_, e_R)  # Element-wise product
+                - np.multiply(self.angular_rate_gain_, e_omega)  # Element-wise product
+                + np.cross(self.angular_velocity_B_, self._inertia_matrix * self.angular_velocity_B_)
+            )
         # Output the wrench
         controller_torque_thrust = np.hstack((tau, thrust))
         

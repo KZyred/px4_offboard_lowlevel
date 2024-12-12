@@ -83,7 +83,7 @@ def eigen_trajectoryPoint_from_msg(msg, position_W, orientation_W_B, velocity_W,
     return position_W, orientation_W_B, velocity_W, angular_velocity_W, acceleration_W
 
 # chuyển đổi các thông tin từ thông điệp ROS (geometry_msgs::msg::PoseStamped) sang các kiểu dữ liệu Eigen.
-def eigen_trajectoryPoint_from_poseMsg( msg, position_W, orientation_W_B):
+def eigen_trajectoryPoint_from_poseMsg( msg):
     # position_W: Vector vị trí trong hệ quy chiếu World
     position_W = np.array([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z])
     # orientation_W_B

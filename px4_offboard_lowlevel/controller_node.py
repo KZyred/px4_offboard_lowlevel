@@ -56,7 +56,7 @@ class ControllerNode(Node):
             PoseStamped,
             self.command_pose_topic_,
             self.commandPoseCallback,
-            qos_profile)
+            10)
         	
         # Publishers
         self.attitude_setpoint_publisher_ = self.create_publisher(VehicleAttitudeSetpoint, self.attitude_setpoint_topic_, 10)
@@ -402,38 +402,22 @@ class ControllerNode(Node):
     def commandPoseCallback(self, pose_msg):
         # When a command is received
         # initialize vectors
-        position, orientation = Convert.eigen_trajectoryPoint_from_poseMsg(pose_msg, position, orientation)
-        self.get_logger().info("Controller got first command message.", once=True)
-        self.controller.set_trajectoryPoint(position, orientation); # Send the command to controller_ obj
         
-    def commandTrajectoryCallback(self, traj_msg):
-        # When a command is received
-        # initialize vectors
-        position, orientation, velocity, angular_velocity, acceleration = Convert.eigen_trajectoryPoint_from_msg(traj_msg, position, orientation, velocity, angular_velocity, acceleration)
-        self.controller.set_trajectoryPoint(position, velocity, acceleration, orientation, angular_velocity)
+        position, orientation = Convert.eigen_trajectoryPoint_from_poseMsg(pose_msg)
         self.get_logger().info("Controller got first command message.", once=True)
+        r_R_B_W_, r_yaw = self.controller.set_trajectoryPoint(position, orientation); # Send the command to controller_ obj
+        
+        
+    # def commandTrajectoryCallback(self, traj_msg):
+    #     # When a command is received
+    #     # initialize vectors
+    #     position, orientation, velocity, angular_velocity, acceleration = Convert.eigen_trajectoryPoint_from_msg(traj_msg, position, orientation, velocity, angular_velocity, acceleration)
+    #     self.controller.set_trajectoryPoint(position, velocity, acceleration, orientation, angular_velocity)
+    #     self.get_logger().info("Controller got first command message.", once=True)
         
     def vehicle_odometryCallback(self, odom_msg):
         #  Debug message
         self.get_logger().info("Controller got first odometry message.", once=True)
-        
-        # odom_msg.position[0] = 0.001
-        # odom_msg.position[1] = 0.002
-        # odom_msg.position[2] = 2.9
-        
-        # odom_msg.velocity[0] = 0.001
-        # odom_msg.velocity[1] = -0.002
-        # odom_msg.velocity[2] = 0.003
-        
-        # odom_msg.q[0] = 0.7
-        # odom_msg.q[1] = 0.01
-        # odom_msg.q[2] = 0.0001
-        # odom_msg.q[3] = 0.9
-        
-        # odom_msg.angular_velocity[0] = 0.001
-        # odom_msg.angular_velocity[1] = 0.002
-        # odom_msg.angular_velocity[2] = -0.003
-        
         
         position, orientation, velocity, angular_velocity = Convert.eigen_odometry_from_PX4Msg(odom_msg)
         self.controller.set_odometry(position, orientation, velocity, angular_velocity)
@@ -508,11 +492,9 @@ class ControllerNode(Node):
         attitude_setpoint_msg = VehicleAttitudeSetpoint()
         attitude_setpoint_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         
+        desired_quaternion = np.roll(desired_quaternion, 1)
         rotated_quat = Convert.rotate_quaternion_fromTo_ENU_NED(desired_quaternion)
-        
-        self.get_logger().info("rotated_quat = %s \n" % (rotated_quat))
-        # self.get_logger().info("throttles = %s \n" % (throttles))
-        
+  
         # [w x y z] PX4 ~ [x y z w] np.array
         attitude_setpoint_msg.q_d[0] = rotated_quat[3]
         attitude_setpoint_msg.q_d[1] = rotated_quat[0]
@@ -535,9 +517,6 @@ class ControllerNode(Node):
         
         #  calculate controller output
         controller_output, desired_quaternion = self.controller.calculate_controller_output()
-        # self.get_logger().info("controller_output = %s \n" % (controller_output))
-        # self.get_logger().info("desired_quaternion = %s \n" % (desired_quaternion))
-        # self.get_logger().info("velocity_W_ = %s \n" % (e_v))
 
         # Normalize the controller output
         normalized_torque_thrust = np.zeros(4)

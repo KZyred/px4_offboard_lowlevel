@@ -13,7 +13,10 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name), glob('launch/*.[pxy][yma]*')),
-        # (os.path.join('share', package_name), glob(os.path.join('px4_mpc/config', '*.rviz'))),
+        (os.path.join('share', package_name), glob('config/controller/*.yaml')),
+        (os.path.join('share', package_name), glob('config/exp/*.yaml')),
+        (os.path.join('share', package_name), glob('config/sitl/*.yaml')),
+        (os.path.join('share', package_name), glob('config/uav_parameters/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,7 +27,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "controller_node = px4_offboard_lowlevel.controller_node:main"
+            "controller_node = px4_offboard_lowlevel.controller_node:main",
+            "circle_trajectory_node = px4_offboard_lowlevel.trajectory_publishers.circle_trajectory_node:main"
         ],
     },
 )

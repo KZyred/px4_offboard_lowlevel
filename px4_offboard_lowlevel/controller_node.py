@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation as R
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import TransformStamped
 from trajectory_msgs.msg import MultiDOFJointTrajectoryPoint
+from rcl_interfaces.msg import SetParametersResult
 
 from px4_msgs.msg import OffboardControlMode
 from px4_msgs.msg import VehicleOdometry
@@ -66,12 +67,9 @@ class ControllerNode(Node):
         self.thrust_setpoint_publisher_ = self.create_publisher(VehicleThrustSetpoint, self.thrust_setpoint_topic_, 10)
         self.torque_setpoint_publisher_ = self.create_publisher(VehicleTorqueSetpoint, self.torque_setpoint_topic_, 10)
 
-        # Parameters subscriber
-    	# callback_handle_ = this->add_on_set_parameters_callback(
-		# std::bind(&ControllerNode::parametersCallback, this, std::placeholders::_1))
-     
-        # self.callback_handle_ = self.create_service(SetPose, '/set_pose', self.add_on_set_parameters_callback)
-        
+        # Parameters subscriber 
+        self.add_on_set_parameters_callback(self.parameters_callback)
+                    
         # Timers
         # 1. Chỉnh off board control model: (hiện tại đang thao tác với 3 model 1.attitude 2.thrust_and_torque	3.direct_actuator)        
         offboard_period = 0.33  # seconds        
@@ -82,28 +80,15 @@ class ControllerNode(Node):
         controller_period = 0.01
         controllerTimer = self.create_timer(controller_period, self.update_controller_output)
         
-    # # Service: xác nhận đã chuyển control_mode
-    # rcl_interfaces::msg::SetParametersResult ControllerNode::parametersCallback(const std::vector<rclcpp::Parameter> &parameters)
-    #     rcl_interfaces::msg::SetParametersResult result
-    #     result.successful = true
-    #     result.reason = "success"
-    #     // print info about the changed parameter
-    #     for (const auto &param : parameters)
-    #     {
-    #         RCLCPP_INFO(this->get_logger(), "Parameter %s has changed to [%s]", param.get_name().c_str(), param.value_to_string().c_str())
-    #         if (param.get_name() == "control_mode")
-    #         {
-    #             control_mode_ = param.as_int()
-    #         }
-    #     }
-    #     return result    
-
-    # def add_set_pos_callback(self, request, response):
-    #     self.setpoint_position[0] = request.pose.position.x
-    #     self.setpoint_position[1] = request.pose.position.y
-    #     self.setpoint_position[2] = request.pose.position.z
-
-    #     return response
+    # Service: xác nhận đã chuyển control_mode
+    # check: https://roboticsbackend.com/ros2-rclpy-parameter-callback/
+    def parameters_callback(self, params):
+        # print info about the changed parameter
+        for param in params:
+            self.get_logger().info("Parameter \"%s\" has changed to [%s] \n" % (param.name, param.value))
+            if param.name == "control_mode":
+                self.control_mode_ = param.value
+        return SetParametersResult(successful=True)  
     
     # self.declare_parameter("config_file", rclpy.Parameter.Type.STRING)
     def load_params(self):
@@ -281,14 +266,14 @@ class ControllerNode(Node):
                      self._thrust_constant])
         
         rotor_velocities_to_torques_and_thrust = np.diag(k) @ rotor_velocities_to_torques_and_thrust
-        self.get_logger().info("rotor_velocities_to_torques_and_thrust = %s \n" % (rotor_velocities_to_torques_and_thrust))
+        # self.get_logger().info("rotor_velocities_to_torques_and_thrust = %s \n" % (rotor_velocities_to_torques_and_thrust))
         #
         self.torques_and_thrust_to_rotor_velocities_[:,:] = 0
         self.torques_and_thrust_to_rotor_velocities_ = np.linalg.pinv(rotor_velocities_to_torques_and_thrust)
         
-        self.get_logger().info("rotor_velocities_to_torques_and_thrust = %s \n" % (rotor_velocities_to_torques_and_thrust))
-        self.get_logger().info("torques_and_thrust_to_rotor_velocities = %s \n" % self.torques_and_thrust_to_rotor_velocities_)
-        self.get_logger().info("throttles_to_normalized_torques_and_thrust = %s \n" % (self.throttles_to_normalized_torques_and_thrust_))
+        # self.get_logger().info("rotor_velocities_to_torques_and_thrust = %s \n" % (rotor_velocities_to_torques_and_thrust))
+        # self.get_logger().info("torques_and_thrust_to_rotor_velocities = %s \n" % self.torques_and_thrust_to_rotor_velocities_)
+        # self.get_logger().info("throttles_to_normalized_torques_and_thrust = %s \n" % (self.throttles_to_normalized_torques_and_thrust_))
         
     # def px4_inverse(self, normalized_torque_and_thrust, Eigen::VectorXd *throttles, const Eigen::VectorXd *wrench)
     def px4_inverse(self, normalized_torque_and_thrust, throttles, wrench):
@@ -442,15 +427,20 @@ class ControllerNode(Node):
         # Prepare msg
         actuator_motors_msg = ActuatorMotors()
         
-        thrust_command = np.zeros(12, dtype=np.float32)
+        # thrust_command = np.zeros(12, dtype=np.float32)
         
-        thrust_command[0] = throttles[0]
-        thrust_command[1] = throttles[1]
+        # thrust_command[0] = throttles[0]
+        # thrust_command[1] = throttles[1]
 
-        thrust_command[2] = throttles[2]
-        thrust_command[3] = throttles[3]
+        # thrust_command[2] = throttles[2]
+        # thrust_command[3] = throttles[3]
 
-        actuator_motors_msg.control = thrust_command.flatten()
+        # actuator_motors_msg.control = thrust_command.flatten()
+        
+        actuator_motors_msg.control[0] = throttles[0]
+        actuator_motors_msg.control[1] = throttles[1]
+        actuator_motors_msg.control[2] = throttles[2]
+        actuator_motors_msg.control[3] = throttles[3]
         
         actuator_motors_msg.reversible_flags = 0
         actuator_motors_msg.timestamp = int(Clock().now().nanoseconds / 1000)
@@ -477,7 +467,7 @@ class ControllerNode(Node):
             thrust_sp_msg.xyz[2] = -0.1
             
         # Rotate torque setpoints from FLU to FRD and fill the msg
-        rotated_torque_sp = Convert.rotate_vector_fromTo_FRD_FLU(np.array[controller_output[0], controller_output[1], controller_output[2]])
+        rotated_torque_sp = Convert.rotate_vector_fromTo_FRD_FLU(np.array([controller_output[0], controller_output[1], controller_output[2]]))
         torque_sp_msg.xyz[0] = rotated_torque_sp[0]
         torque_sp_msg.xyz[1] = rotated_torque_sp[1]
         torque_sp_msg.xyz[2] = rotated_torque_sp[2]
@@ -540,10 +530,13 @@ class ControllerNode(Node):
                     
                     
 def main(args=None):
-    # rclpy.init(args=sys.argv)
+    # Initialize ROS 2
     rclpy.init(args=args)
+    # Create an instance of the ControllerNode
     controller_node = ControllerNode()
+    # Keep the node running
     rclpy.spin(controller_node)
+    # Shutdown the node when done
     controller_node.destroy_node()
     rclpy.shutdown()
 

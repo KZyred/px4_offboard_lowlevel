@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from glob import glob
 import os
 
-package_name = 'px4_offboard_lowlevel'
+package_name = 'px4_offboard_lowlevel_py'
 
 setup(
     name=package_name,
@@ -24,11 +24,10 @@ setup(
     maintainer_email='dung839224@gmail.com',
     description='Low-level control of PX4 Multi-rotor vehicles in Offboard mode (python)',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "controller_node = px4_offboard_lowlevel.controller_node:main",
-            "circle_trajectory_node = px4_offboard_lowlevel.trajectory_publishers.circle_trajectory_node:main"
+            "controller_node = px4_offboard_lowlevel_py.controller_node:main",
+            "circle_trajectory_node_py = px4_offboard_lowlevel_py.trajectory_publishers.circle_trajectory_node:main"
         ],
     },
 )

@@ -8,7 +8,7 @@
       "includePath": [
         "/home/dung10/llc_ws/install/px4_msgs/include/**",
         "/opt/ros/humble/include/**",
-        "/home/dung10/llc_ws/src/px4_offboard_lowlevel/include/**",
+        "/home/dung10/llc_ws/src/px4_offboard_lowlevel_py/include/**",
         "include/**",
         "/usr/include/**"
       ],

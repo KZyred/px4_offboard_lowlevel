@@ -19,8 +19,8 @@ from px4_msgs.msg import ActuatorMotors
 from px4_msgs.msg import VehicleThrustSetpoint
 from px4_msgs.msg import VehicleTorqueSetpoint
 
-from px4_offboard_lowlevel.controllers.controller import Controller
-import px4_offboard_lowlevel.convert_unit as Convert
+from px4_offboard_lowlevel_py.controllers.controller import Controller
+import px4_offboard_lowlevel_py.convert_unit as Convert
 
 
 class ControllerNode(Node):
